@@ -1,10 +1,26 @@
-# 인수인계 (2026-08-17, 2026-11-15 갱신)
+# 인수인계 — ExcelToSqlite (2026-11-15 기준)
 
-> **2026-11-15 갱신** — 배포 준비. **.NET 10** 전환, 윈도 exe 한 파일·맥 .app zip 배포 스크립트,
-> GitHub Actions, 아이콘, 버전. 화면 앱 프로젝트 이름을 `ExcelToSqlite.Desktop` 으로 바꿈.
-> 자세한 내용은 아래 "빌드 이력" 7번.
->
-> **2026-11-15** — 공개 저장소 `inscompile/ExcelToSqlite` 로 옮김. 이전 개발 기록은 넘기지 않고 커밋 하나로 새로 시작했다.
+> 이 문서만 읽고 이어서 일할 수 있게 쓴다. 사용법·동작 규칙·배포 방법은 [README.md](README.md),
+> 커밋·공개 저장소 규칙은 [CLAUDE.md](CLAUDE.md). 고친 내용은 이 문서와 README에 함께 적는다.
+
+## 새 세션은 여기부터
+
+- **무엇**: 엑셀 명명범위·텍스트 파일을 SQLite `.db` 로 적재하는 화면 앱(`ExcelToSqlite`)과 명령줄 도구(`xl2sqlite`). C# · .NET 10 · Avalonia 11.3
+- **저장소**: GitHub `inscompile/ExcelToSqlite`. 2026-11-15에 지금 상태를 커밋 하나로 새로 시작했다 (예전 개발 기록은 넘기지 않음).
+  공개로 바꾸기 전이다. 버전 `1.0.0`(`Directory.Build.props`), **태그는 아직 없다**
+- **지금 상태**: 배포 준비 코드 일은 끝났다 — .NET 10, 윈도 exe 한 파일, 맥 `.app` zip, Actions(윈도·맥 빌드·실행 확인, 태그면 Releases),
+  아이콘, 버전, 화면 확인, 오픈소스 고지 `THIRD-PARTY-NOTICES.txt`, 맥 번들 ID `io.github.inscompile.exceltosqlite`.
+  빌드 경고 0개. 아래 "확인한 것·못 한 것"
+- **바로 다음** (푸시·태그·공개 전환은 매번 사용자 확인 — 관리 세션이 물어보고 한다):
+  1. 푸시 → Actions 통과 확인 (이번에 "오픈소스 고지가 최신인지" 단계가 새로 들어감)
+  2. 태그 `v1.0.0` → Releases에 `ExcelToSqlite.exe`·`ExcelToSqlite-mac.zip`·`THIRD-PARTY-NOTICES.txt` 세 파일이 붙었는지
+  3. 공개로 바꾸기. 그 뒤의 코드 일은 아래 "다음에 할 일"
+- **확인 명령**:
+  ```bash
+  dotnet build -c Release                       # 경고 0개여야 함
+  bash scripts/publish.sh all                   # dist/ 에 맥 .app·zip, 윈도 exe
+  dotnet run scripts/Notices/Notices.cs -- --check   # 고지가 배포 파일과 맞는지
+  ```
 
 ## 무엇을 만들고 있나
 
@@ -37,17 +53,31 @@
 | 단일 셀 이름 | 적재 대상에서 **제외** | 셀 하나짜리 이름은 테이블이 아니라 스칼라 파라미터 |
 | 조회 기능 | **넣지 않음** | 역할 분리. DB Browser/DataGrip으로 조회 |
 | UI 상태 | 종료 시 저장 후 재실행 시 복원 + 초기화 버튼 | |
+| Releases 파일 | 윈도 exe, 맥(Apple 칩) zip, `THIRD-PARTY-NOTICES.txt` 셋만 | Intel 맥용·명령줄 `xl2sqlite` 는 올리지 않는다 (2026-11-15 결정) |
+| 맥 번들 ID | `io.github.inscompile.exceltosqlite` | 조직 주소를 거꾸로. 맥이 설정·권한을 이 ID로 기억하므로 **한 번 내면 바꾸지 않는다** |
+| 오픈소스 고지 | `scripts/Notices/Notices.cs` 가 배포 파일의 deps.json으로 만든다. 손으로 고치지 않는다 | 실제로 들어가는 것만 (디버그·빌드·아이콘 생성기 전용 패키지 제외) |
 
-## 현재 상태
+## 확인한 것·못 한 것 (2026-11-15)
 
-**.NET 10 빌드 통과** (Release 오류 0개, 경고 0개). 배포 파일 확인 (2026-11-15, 이 맥):
-- 맥 `.app`: zip을 풀어 `open`으로 열면 12초 이상 유지, 서명 검사 통과
-- 윈도 `ExcelToSqlite.exe`: 파일 하나(약 50MB), 아이콘 포함
-- 명령줄 한 파일: CP949 텍스트의 `0100`·`똠햏` 이 그대로 들어감
-- **GitHub Actions 첫 실행 통과** (2026-11-15, 공개 전 비공개 저장소에서, 2분 15초): 윈도·맥 모두 빌드 → 배포 파일 →
-  CP949 적재 확인 → 화면 앱 15초 유지. 윈도 exe가 실제 윈도에서 켜지는 것은 이것으로 확인됐다
+**확인한 것**
+- 빌드: Release 오류 0개, 경고 0개. 빈 폴더에 새로 받아 빌드해도 된다
+- 맥 `.app`: zip을 풀어 `open` 으로 열면 12초 이상 유지, `codesign --verify --deep --strict` 통과, 번들 ID·아이콘·고지 파일 들어 있음
+- 윈도 `ExcelToSqlite.exe`: 파일 하나(약 50MB), 아이콘 포함. **실제 윈도에서 켜지는 것은 Actions(windows-latest)로 확인** —
+  공개 전 리허설 저장소에서 main 푸시와 태그 `v1.0.0` 둘 다 통과했고, 태그 때 Releases에 exe·zip이 붙었다
+- 명령줄 한 파일: CP949 텍스트의 `0100`·`똠햏` 이 그대로 들어감 (Actions에서도 윈도·맥 둘 다)
+- 화면 (사람이 Rider에서): 창 제목 버전 `1.0.0`, 아이콘, 드래그 앤 드롭
+- 화면 (헤드리스 자동 확인 — 아래 "빌드 이력" 8번): 기본 PK 개수 칸·전체 적용, 표의 PK수·인덱스 컬럼·테이블명 칸 편집,
+  `컬럼 자동 추가` 체크박스(교체 모드에서 꺼짐, 신규 INSERT에서 켜짐), DB 칸에 이름만 넣고 실행 → 첫 번째 원본 파일 폴더에 생김.
+  만든 DB에서 PK·인덱스·중간에 끼어든 컬럼(맨 뒤에 붙고 기존 행은 빈 값)까지 확인. 바인딩 오류·경고 0건
+- 오픈소스 고지: 윈도·맥 배포 파일의 패키지 27개 + Inter 글꼴 + SQLite + .NET 런타임. `--check` 가 일부러 틀린 버전을 잡는 것 확인
 
-## 빌드 이력 (2026-08-17, 첫 빌드에서 고친 것)
+**못 한 것**
+- 이번에 고친 것(고지 확인 단계, Releases에 고지 파일 붙이기, 번들 ID)은 **아직 Actions에서 돌지 않았다** (푸시 전)
+- 고지가 들어간 새 Releases는 아직 없다 (태그 전)
+- 시험 프로젝트 없음 (아래 "다음에 할 일" 2)
+- 영어 화면 없음
+
+## 빌드 이력 (고친 것과 그 이유)
 
 ### 1. `ExcelToSqlite.App.app이 손상되었습니다` — 빌드 산출물 위치 (가장 중요)
 
@@ -143,7 +173,7 @@ ClosedXML은 부분 로드를 지원하지 않아 이름 하나만 필요해도 
 
 - `NumericUpDown.Value`(`decimal?`) 바인딩 — 경고조차 없었음.
   단 `AvaloniaUseCompiledBindingsByDefault=false`라 **바인딩 오류는 컴파일이 아니라 런타임에만 드러난다.**
-  PK 개수 입력란은 스모크 테스트 때 값이 실제로 반영되는지 눈으로 확인할 것
+  PK 개수 입력란은 2026-11-15 헤드리스 확인(8번)에서 값이 실제로 반영되는 것을 확인했다
 
 ### 7. .NET 10 전환과 배포 준비 (2026-11-15)
 
@@ -168,6 +198,31 @@ ClosedXML은 부분 로드를 지원하지 않아 이름 하나만 필요해도 
 
 > csproj 같은 XML 주석 안에는 `--` 를 쓸 수 없다 (`dotnet run --project …` 를 적었다가 MSB4025).
 
+### 8. 화면 확인·오픈소스 고지·번들 ID (2026-11-15, 공개 저장소로 옮긴 뒤)
+
+**화면 확인 (헤드리스)** — 사람이 누르지 않고 `Avalonia.Headless` 11.3.23으로 실제 `MainWindow` 를 띄워 확인했다.
+시험 코드는 저장소에 넣지 않았다 (시험 프로젝트를 만들 때 옮겨 담을 것). 다시 할 때 알아 둘 것:
+- 표(DataGrid) 칸은 사람처럼 편집해야 확인이 된다: `grid.SelectedItem`·`CurrentColumn` → `BeginEdit()` → 칸의 `TextBox` 에
+  `SelectAll()` 후 `window.KeyTextInput("…")` → `KeyPress(Key.Enter …)`. `Avalonia.Logging.Logger.Sink` 를 갈아 끼워 경고 이상을 모으면 바인딩 오류가 보인다
+- **`MainWindowViewModel` 생성자는 사용자의 실제 화면 상태 파일(`ui-state.json`)을 읽는다.** 맥의 .NET은 설정 폴더를
+  정할 때 `HOME` 을 보지 않아 시험용으로 돌릴 수 없다. 저장은 `App` 의 데스크톱 수명 주기(`ShutdownRequested`·창 `Closing`)에서만
+  하므로 헤드리스에서는 쓰지 않는다 — 불러온 내용은 메모리에서만 비울 것. **`ResetCommand` 는 그 파일을 지우므로 시험에서 부르지 말 것**
+
+**오픈소스 고지** — `scripts/Notices/Notices.cs` (CodeFlowTracer 의 같은 도구를 본뜸, .NET 10 파일 하나짜리 프로그램)
+- 입력: 윈도 `src/ExcelToSqlite.Desktop/obj/Release/net10.0/win-x64/ExcelToSqlite.deps.json`(한 파일 exe 안에 묶이므로 obj 사본),
+  맥 `dist/ExcelToSqlite.app/Contents/MacOS/ExcelToSqlite.deps.json`. 그래서 `bash scripts/publish.sh all` 을 먼저 한다.
+  플랫폼별 deps.json이라 리눅스용 네이티브 패키지나 디버그 전용 `Avalonia.Diagnostics` 는 들어가지 않는다. 한쪽에만 있는 패키지는 `(윈도)`·`(맥)` 표시
+- 패키지에 라이선스 글이 없는 두 가지는 `scripts/Notices/` 의 원문을 넣는다: `Apache-2.0.txt`(apache.org, SQLitePCLRaw 용),
+  `Inter-OFL-1.1.txt`(rsms/inter `v3.19` 의 LICENSE.txt)
+- **Inter 글꼴은 3.19판이다.** `Avalonia.Fonts.Inter` 11.3.23 DLL 안 글꼴의 name 테이블이 `Version 3.019`,
+  `Copyright 2020 The Inter Project Authors` 다. 최신판(4.x) 저장소의 문구(`Copyright (c) 2016 …`)가 아니라 3.19판 라이선스 파일
+  (`Copyright (c) 2016-2020 The Inter Project Authors.`)을 쓴다. Avalonia를 올리면 글꼴 판도 다시 볼 것
+- .NET 런타임 고지는 윈도·맥 팩이 줄바꿈만 다르고 같다 → 하나만 넣는다. 패치 번호는 빌드하는 컴퓨터마다 달라서 "10.0" 까지만 적는다
+- `--check`: 배포 파일에 든 패키지·버전이 고지에 다 있는지만 본다 (런타임 고지는 보지 않음). Actions 윈도·맥 작업에서 돈다
+- 두는 곳: 저장소 맨 위, 맥 `.app/Contents/Resources`(`publish.sh` 가 서명 전에 복사), Releases에 따로 한 파일 (윈도 exe는 한 파일이라 옆에 못 둠)
+
+**번들 ID** `local.exceltosqlite.desktop` → `io.github.inscompile.exceltosqlite` (`scripts/publish.sh`). 고친 뒤 `.app` 이 열리는 것 확인
+
 ## 스모크 테스트 (2026-08-17, 실제 업무용 통합 문서 35MB — 저장소에는 넣지 않음)
 
 - `--list-names`: 명명범위 **136개**(사용 가능 134 + 단일 셀 2), 시트 **53개**. `#REF!` 깨진 이름 0개
@@ -178,24 +233,17 @@ ClosedXML은 부분 로드를 지원하지 않아 이름 하나만 필요해도 
 
 ## 다음에 할 일
 
-1. **GUI 스모크 테스트.** 창 제목 버전(`1.0.0`)·아이콘·드래그&드롭(새 API)은 사용자가 Rider에서 확인함 (2026-11-15).
-   남은 것: PK 개수·인덱스 컬럼·컬럼 자동 추가 체크박스 (바인딩 오류는 런타임에만 드러남),
-   DB 칸에 이름만 넣고 실행해 첫 번째 원본 파일 폴더에 생기는지
-2. Releases에 올릴 때: `Directory.Build.props` 의 `<Version>` 과 같은 태그(`v1.0.0`)를 푸시 (푸시·태그는 사용자 확인)
-2-1. **공개 전에** (2026-11-15 결정):
-   - 오픈소스 고지 `THIRD-PARTY-NOTICES.txt` — 배포 파일에 실제로 들어가는 패키지(deps.json 기준)의 라이선스·저작권,
-     SkiaSharp·HarfBuzzSharp 패키지 안의 고지(같은 내용이라 한 번만), SQLitePCLRaw(Apache-2.0 전문),
-     ANGLE(윈도만, BSD), .NET 10 런타임의 LICENSE·THIRD-PARTY-NOTICES, 그리고 **Inter 글꼴(SIL OFL 1.1)** —
-     `Avalonia.Fonts.Inter` 패키지는 MIT지만 안의 글꼴은 OFL이고 DLL에 라이선스 글이 없으므로 직접 넣는다
-     ("Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)" + OFL 1.1 전문).
-     디버그·빌드·아이콘 생성기 전용 패키지는 뺀다. 저장소 맨 위에 두고, 맥 `.app/Contents/Resources` 와
-     Releases에도 함께 올리고(윈도 exe는 한 파일이라 옆에 못 둠), README "라이선스"에 적는다.
-     `.gitignore` 에는 이미 `!/THIRD-PARTY-NOTICES.txt` 가 있다
-   - 맥 번들 ID `local.exceltosqlite.desktop` → `io.github.inscompile.exceltosqlite` (`scripts/publish.sh`). 한 번 내면 바꾸지 않는다
-   - Releases에는 윈도 exe와 맥(Apple 칩) zip만 올린다. Intel 맥용·명령줄 `xl2sqlite` 는 올리지 않는다
-3. 시험 프로젝트: 작은 xlsx(시험 코드가 직접 만들기, `.gitignore` 가 `*.xlsx` 를 막음)·CSV·CP949 텍스트 →
-   앞자리 0, 19자리 코드, 1900 날짜 윤년 보정, 이름 하나 걸러 빠지던 버그(4번), 인코딩 이름(7번)
-4. 개선 검토 대상: 적재 전 미리보기 그리드, 프로파일 저장/불러오기, 영어 화면
+1. **공개까지** (위 "새 세션은 여기부터"의 바로 다음 1~3): 푸시 → Actions 통과 → 태그 `v1.0.0` → Releases 세 파일 → 공개.
+   푸시·태그·공개 전환은 매번 사용자 확인
+2. **시험 프로젝트** (`tests/` 같은 새 루트 폴더는 `.gitignore` 에 `!/tests` 를 더해야 들어간다):
+   - Core: 작은 xlsx(시험 코드가 직접 만들기 — `.gitignore` 가 `*.xlsx` 를 막음)·CSV·CP949 텍스트 → 앞자리 0, 19자리 코드,
+     1900 날짜 윤년 보정, 이름 하나 걸러 빠지던 버그(4번), 인코딩 이름 `cp949`·`euc-kr`(7번), 상대 DB 경로(7번), 컬럼 자동 추가
+   - 화면: 8번의 헤드리스 확인을 옮겨 담기. 그 전에 화면 상태 파일 위치를 시험에서 바꿀 수 있게 하면 좋다
+     (지금은 `UiStateStore.FilePath` 가 사용자 설정 폴더로 고정)
+   - Actions의 "빌드" 다음에 `dotnet test` 단계를 넣는다
+3. 개선 검토: 적재 전 미리보기 그리드, 프로파일 저장/불러오기, 영어 화면, 앱 안 "정보" 창(버전·GitHub 주소·고지)
+4. 패키지·버전을 바꾸면: `bash scripts/publish.sh all` → `dotnet run scripts/Notices/Notices.cs` → 고지도 함께 커밋.
+   Avalonia를 올릴 때 `Avalonia.Controls.DataGrid` 는 번호가 따로이고(7번), Inter 글꼴 판이 바뀌었는지(8번) 볼 것
 
 ## 알려진 제약
 
@@ -209,7 +257,7 @@ ClosedXML은 부분 로드를 지원하지 않아 이름 하나만 필요해도 
 - PK 컬럼은 `ALTER` 로 추가할 수 없다. 키 컬럼이 기존 테이블에 없으면 실패로 보고된다
 - **프로젝트를 동기화 폴더(Dropbox/iCloud) 안에 두면 안 된다.** GUI가 SIGKILL(137)로 죽는다.
 - 배포 파일은 서명하지 않는다(맥은 임시 서명). 처음 열 때 윈도 SmartScreen, 맥 `그래도 열기` 단계가 있다 (README)
-- 맥 최소 버전 12.0 (.NET 10 런타임의 하한). Apple 칩용만 만든다 — Intel은 `MAC_RID=osx-x64`
+- 맥 최소 버전 12.0 (.NET 10 런타임의 하한). Apple 칩용만 만든다 — Intel은 `MAC_RID=osx-x64` 로 만들 수 있지만 Releases에는 올리지 않는다
 - 원인 불명의 실행 오류가 나면 빌드 산출물을 다른 로컬 경로로 복사해 실행해 보면
   가려져 있던 진짜 오류 메시지가 나오는 경우가 있다
 

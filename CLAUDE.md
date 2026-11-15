@@ -18,6 +18,7 @@ dotnet run --project src/ExcelToSqlite.Cli -- --help      # 명령줄 (xl2sqlite
 bash scripts/publish.sh            # 맥 .app zip  (dist/)
 bash scripts/publish.sh win        # 윈도 exe 한 파일 (dist/win/)
 dotnet run --project scripts/IconGen   # 아이콘 다시 만들기 (src/ExcelToSqlite.Desktop/Assets)
+dotnet run scripts/Notices/Notices.cs  # 오픈소스 고지 다시 만들기 (publish.sh all 뒤, 패키지·버전을 바꿨을 때)
 ```
 
 - 버전은 `Directory.Build.props`의 `<Version>` 한 곳. 태그 `v<버전>`을 올리면 Actions(`.github/workflows/build.yml`)가 윈도·맥에서 빌드·실행 확인 후 Releases에 `ExcelToSqlite.exe`·`ExcelToSqlite-mac.zip`을 붙인다.
