@@ -47,8 +47,12 @@ make_mac() {
     cp "$ROOT/src/ExcelToSqlite.Desktop/Assets/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
     icon="<key>CFBundleIconFile</key><string>AppIcon</string>"
   fi
+  # 오픈소스 고지 (코드가 아닌 파일은 Resources에, 서명 전에)
+  cp "$ROOT/THIRD-PARTY-NOTICES.txt" "$app/Contents/Resources/"
 
-  # CFBundleShortVersionString 은 숫자만 받는다 (1.0.0-beta → 1.0.0). 최소 macOS 12.0 = .NET 10 런타임의 하한
+  # CFBundleShortVersionString 은 숫자만 받는다 (1.0.0-beta → 1.0.0). 최소 macOS 12.0 = .NET 10 런타임의 하한.
+  # 번들 ID는 조직 주소(inscompile.github.io)를 거꾸로 — 한 번 내면 바꾸지 않는다
+  #   (맥이 설정·권한을 이 ID로 기억한다)
   cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -56,7 +60,7 @@ make_mac() {
 <dict>
   <key>CFBundleName</key><string>ExcelToSqlite</string>
   <key>CFBundleDisplayName</key><string>ExcelToSqlite</string>
-  <key>CFBundleIdentifier</key><string>local.exceltosqlite.desktop</string>
+  <key>CFBundleIdentifier</key><string>io.github.inscompile.exceltosqlite</string>
   <key>CFBundleVersion</key><string>${VERSION%%-*}</string>
   <key>CFBundleShortVersionString</key><string>${VERSION%%-*}</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>

@@ -36,6 +36,8 @@ Directory.Build.props       공통 설정: .NET 버전, 앱 버전(<Version>), A
 global.json                 .NET 10 SDK 고정
 scripts/publish.sh          배포 파일 만들기 (윈도 exe 한 파일, 맥 .app zip)
 scripts/IconGen/            앱 아이콘 만들기 (-> src/ExcelToSqlite.Desktop/Assets)
+scripts/Notices/           오픈소스 고지 만들기 (-> THIRD-PARTY-NOTICES.txt)
+THIRD-PARTY-NOTICES.txt     배포 파일에 함께 들어 있는 오픈소스의 저작권·라이선스
 .github/workflows/build.yml 윈도·맥 자동 빌드, 켜지는지 확인, 태그를 올리면 Releases
 ```
 
@@ -77,8 +79,11 @@ bash scripts/publish.sh cli win-x64   # 명령줄 -> dist/cli-win-x64/xl2sqlite.
 - 스크립트 없이 `dotnet publish src/ExcelToSqlite.Desktop -c Release -r win-x64` 만 해도 한 파일이 나온다 (설정은 csproj).
 - 버전은 `Directory.Build.props` 의 `<Version>` 하나만 고친다. 창 제목과 맥 `Info.plist` 에 들어간다.
 - GitHub에 올리면 Actions가 윈도·맥에서 빌드하고 배포 파일을 만들어 15초 동안 켜 본다.
-  태그 `v<버전>`(예: `v1.0.0`)을 올리면 Releases에 `ExcelToSqlite.exe` 와 `ExcelToSqlite-mac.zip` 이 붙는다.
+  태그 `v<버전>`(예: `v1.0.0`)을 올리면 Releases에 `ExcelToSqlite.exe`, `ExcelToSqlite-mac.zip`, `THIRD-PARTY-NOTICES.txt` 가 붙는다.
   태그가 `<Version>` 과 다르면 실패한다. `-beta` 처럼 `-`가 붙으면 시험판으로 올린다.
+- **패키지를 더하거나 버전을 바꾸면 오픈소스 고지를 다시 만든다**: `bash scripts/publish.sh all` 뒤
+  `dotnet run scripts/Notices/Notices.cs`. 윈도·맥 배포 파일에 실제로 들어가는 패키지만 모은다.
+  고지가 오래되면(배포 파일의 패키지·버전이 고지에 없으면) Actions가 실패한다. 맥 `.app` 에는 `Contents/Resources` 에 함께 들어간다.
 
 ### 처음 열 때 (서명하지 않은 앱)
 
@@ -154,3 +159,6 @@ GUI에서 만든 구성을 CLI용 `sources.json` 으로 옮겨 배치 실행할 
 ## 라이선스
 
 MIT 라이선스 — [LICENSE](LICENSE). Copyright (c) 2026 inscompile.
+
+배포 파일에 함께 들어 있는 오픈소스(Avalonia, SkiaSharp, HarfBuzzSharp, SQLite 등, Inter 글꼴, .NET 런타임)의 저작권과 라이선스는
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) 에 있다. 맥 앱 안(`ExcelToSqlite.app/Contents/Resources`)과 Releases에도 같은 파일이 있다.
