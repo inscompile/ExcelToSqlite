@@ -1,0 +1,49 @@
+{
+  "dbPath": "./out/pricing.db",
+  "options": {
+    "dropExistingTable": true,
+    "duplicateKey": "Fail",
+    "keyColumnsNotNull": true,
+    "trimValues": true,
+    "emptyStringAsNull": true,
+    "writeManifest": true,
+    "continueOnError": true
+  },
+  "sources": [
+    {
+      "filePath": "./data/기초서류.xlsx",
+      "kind": "ExcelNamedRange",
+      "objectName": "위험률_반려견",
+      "tableName": "RISK_RATE_DOG",
+      "keyColumnCount": 2
+    },
+    {
+      "filePath": "./data/기초서류.xlsx",
+      "kind": "ExcelNamedRange",
+      "objectName": "담보정보",
+      "keyColumnCount": 1
+    },
+    {
+      "filePath": "./data/layout.xlsx",
+      "kind": "ExcelSheet",
+      "objectName": "Sheet1",
+      "tableName": "LAYOUT",
+      "keyColumnCount": 0
+    },
+    {
+      "filePath": "./data/rate_2026.tsv",
+      "kind": "DelimitedText",
+      "tableName": "RATE_2026",
+      "keyColumnCount": 3,
+      "delimiter": "\t",
+      "encoding": "auto"
+    },
+    {
+      "filePath": "./data/legacy_cp949.txt",
+      "kind": "DelimitedText",
+      "keyColumnCount": 1,
+      "encoding": "cp949",
+      "skipRows": 2
+    }
+  ]
+}

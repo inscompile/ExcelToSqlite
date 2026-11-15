@@ -1,0 +1,121 @@
+# 윈도·맥에서 빌드하고, 배포 파일을 만들어 실제로 켜 본다 — main에 올릴 때마다 GitHub가 자동으로.
+#   결과: GitHub 저장소 → Actions 탭 (초록 체크 = 통과, 빨간 X = 실패, 누르면 어느 단계가 왜 실패했는지).
+#   만든 파일은 그 실행 페이지 아래 "Artifacts"에서 받는다.
+#   태그 v<버전>(예: v1.0.0)을 올리면 Releases에 ExcelToSqlite.exe · ExcelToSqlite-mac.zip 을 붙인다.
+#   버전은 Directory.Build.props 의 <Version> — 태그와 다르면 실패한다. v1.0.0-beta 처럼 '-'가 붙으면 시험판.
+# 윈도 exe가 실제로 켜지는지는 (윈도가 없으니) 여기서만 확인할 수 있다.
+name: 빌드·배포
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths-ignore: ['**.md']   # 문서만 바뀌면 돌리지 않는다 (태그에는 적용되지 않음)
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 윈도
+            os: windows-latest
+            target: win
+            cli: win-x64
+            file: dist/win/ExcelToSqlite.exe
+          - name: 맥
+            os: macos-latest
+            target: mac
+            cli: osx-arm64
+            file: dist/ExcelToSqlite-mac.zip
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 태그와 버전이 같은지 보기
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::태그 $GITHUB_REF_NAME 와 Directory.Build.props 의 버전 $v 가 다릅니다"; exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 빌드
+        run: dotnet build ExcelToSqlite.sln -c Release
+
+      - name: 배포 파일 만들기
+        run: |
+          bash scripts/publish.sh ${{ matrix.target }}
+          bash scripts/publish.sh cli ${{ matrix.cli }}
+
+      - name: 명령줄 도구로 CP949 텍스트를 적재해 보기 (앞자리 0·확장 한글이 그대로 들어가는지)
+        run: |
+          mkdir -p "$RUNNER_TEMP/t" && cd "$RUNNER_TEMP/t"
+          # "코드|이름\n0100|똠햏\n" 을 CP949 바이트로
+          printf '\xc4\xda\xb5\xe5\x7c\xc0\xcc\xb8\xa7\x0a\x30\x31\x30\x30\x7c\x8c\x63\xc1\x64\x0a' > cp949.txt
+          "$GITHUB_WORKSPACE/dist/cli-${{ matrix.cli }}/xl2sqlite" --db out.db --text cp949.txt --keys 1 --encoding cp949
+          py=python3; [ "$RUNNER_OS" = Windows ] && py=python
+          $py -c "import sqlite3,sys; r=sqlite3.connect('out.db').execute('select * from cp949').fetchall(); print(ascii(r)); sys.exit(0 if r==[('0100','똠햏')] else 1)"
+
+      - name: 윈도 exe가 켜지는지 보기 (15초 뒤에도 떠 있으면 통과)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist/win/ExcelToSqlite.exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($p.HasExited) { Write-Error "ExcelToSqlite.exe가 켜지자마자 꺼졌습니다 (종료 코드 $($p.ExitCode))"; exit 1 }
+          Stop-Process -Id $p.Id -Force
+          Write-Output "ExcelToSqlite.exe가 켜졌습니다."
+
+      - name: 맥 앱이 켜지는지 보기 (15초 뒤에도 떠 있으면 통과)
+        if: runner.os == 'macOS'
+        run: |
+          open -n dist/ExcelToSqlite.app
+          sleep 15
+          pid=$(pgrep -f 'ExcelToSqlite.app/Contents/MacOS/ExcelToSqlite' || true)
+          if [ -z "$pid" ]; then echo "::error::ExcelToSqlite.app이 켜지지 않았거나 바로 꺼졌습니다"; exit 1; fi
+          kill $pid
+          echo "ExcelToSqlite.app이 켜졌습니다."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ExcelToSqlite-${{ matrix.target }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+
+  release:
+    name: Releases에 올리기
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Releases 만들기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pre=""; [[ "$GITHUB_REF_NAME" == *-* ]] && pre="--prerelease"
+          gh release create "$GITHUB_REF_NAME" dist/ExcelToSqlite.exe dist/ExcelToSqlite-mac.zip \
+            --title "ExcelToSqlite $GITHUB_REF_NAME" --generate-notes $pre

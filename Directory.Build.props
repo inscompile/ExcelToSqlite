@@ -1,0 +1,15 @@
+<Project>
+  <!-- 프로젝트 3개 공통 설정 -->
+  <PropertyGroup>
+    <!-- .NET 10 (LTS, 2028-11까지 지원). 만들려면 .NET 10 SDK가 있어야 한다 (global.json) -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- 배포 버전. 태그 v<Version> 을 올려야 Releases에 붙는다 (.github/workflows/build.yml) -->
+    <Version>1.0.0</Version>
+    <AvaloniaVersion>11.3.23</AvaloniaVersion>
+    <!-- Release는 디버그 정보를 dll 안에 넣는다: 배포 폴더에 .pdb가 따로 생기지 않고, 오류 위치(줄 번호)는 남는다 -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
+  </PropertyGroup>
+</Project>

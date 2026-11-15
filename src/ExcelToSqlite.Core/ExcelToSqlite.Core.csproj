@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Windows / macOS(Intel, Apple Silicon) / Linux 공용. OS 전용 API 미사용 -->
+
+  <ItemGroup>
+    <!-- .xlsx 읽기는 외부 패키지 없이 System.IO.Compression + XmlReader 스트리밍으로 직접 처리 -->
+    <!-- SQLite 엔진 네이티브 바이너리 내장 (win-x64/arm64, osx-x64/arm64, linux) -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
+    <!-- CP949(EUC-KR) 등 레거시 인코딩은 .NET 10에 들어 있다 (System.Text.Encoding.CodePages 패키지 불필요) -->
+  </ItemGroup>
+
+</Project>

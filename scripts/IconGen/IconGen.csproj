@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 앱 아이콘 만들기: 저장소 폴더에서 dotnet run, 프로젝트 scripts/IconGen → src/ExcelToSqlite.Desktop/Assets/AppIcon.png·ico·icns (맥에서) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+  </ItemGroup>
+</Project>

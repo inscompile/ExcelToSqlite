@@ -1,0 +1,184 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ExcelToSqlite.Desktop.ViewModels"
+        x:Class="ExcelToSqlite.Desktop.Views.MainWindow"
+        Title="Excel/Text → SQLite 적재기"
+        Icon="/Assets/AppIcon.ico"
+        Width="1180" Height="800" MinWidth="960" MinHeight="640"
+        DragDrop.AllowDrop="True">
+
+  <Window.Resources>
+    <SolidColorBrush x:Key="ErrBrush" Color="#C62828" />
+    <SolidColorBrush x:Key="DimBrush" Color="#757575" />
+  </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="BorderBrush" Value="#DDDDDD" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" Margin="12" RowSpacing="10">
+
+    <!-- ① 대상 DB -->
+    <Border Grid.Row="0" Classes="card">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="대상 DB" Classes="h" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding DbPath}" Watermark="경로를 입력하거나 .db 파일을 창에 끌어다 놓으세요"/>
+        <Button    Grid.Row="0" Grid.Column="2" Content="기존 DB 선택…" Click="OnBrowseDb"/>
+        <Button    Grid.Row="0" Grid.Column="3" Content="새 DB 만들기…" Click="OnCreateDb"/>
+
+        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="16">
+          <RadioButton GroupName="mode" Content="데이터 교체 (DROP 후 재생성)"
+                       IsChecked="{Binding IsReplaceMode}"/>
+          <RadioButton GroupName="mode" Content="신규 INSERT (기존 행 유지)"
+                       IsChecked="{Binding IsAppendMode}"/>
+          <TextBlock Text="중복 PK" VerticalAlignment="Center" Margin="12,0,0,0"/>
+          <ComboBox SelectedIndex="{Binding DuplicateIndex}" Width="130">
+            <ComboBoxItem Content="오류"/>
+            <ComboBoxItem Content="덮어쓰기"/>
+            <ComboBoxItem Content="건너뛰기"/>
+          </ComboBox>
+        </StackPanel>
+
+        <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                   Text="{Binding DbModeHint}" Foreground="{StaticResource DimBrush}" FontSize="12"/>
+      </Grid>
+    </Border>
+
+    <!-- ② 파일 목록 + 테이블 그리드 -->
+    <Grid Grid.Row="1" ColumnDefinitions="280,*" ColumnSpacing="10">
+
+      <Border Grid.Column="0" Classes="card">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock Grid.Row="0" Classes="h" Text="파일 목록"/>
+
+          <ListBox Grid.Row="1" ItemsSource="{Binding Files}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Path}">
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock FontSize="11" Foreground="{StaticResource DimBrush}">
+                      <Run Text="{Binding CategoryLabel}"/><Run Text=" · "/><Run Text="{Binding Detail}"/>
+                    </TextBlock>
+                  </StackPanel>
+                  <Button Grid.Column="1" Content="✕" Padding="6,0" Background="Transparent"
+                          Command="{Binding $parent[ListBox].DataContext.RemoveFileCommand}"
+                          CommandParameter="{Binding}"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Grid.Row="2" Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
+                     Foreground="{StaticResource DimBrush}"
+                     Text="엑셀(.xlsx/.xlsm)은 명명범위마다, 텍스트는 파일마다 테이블 1개를 만듭니다."/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="card">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+            <TextBlock Classes="h" Text="생성할 테이블" VerticalAlignment="Center"/>
+            <Button Content="전체 선택" Command="{Binding SelectAllCommand}"/>
+            <Button Content="전체 해제" Command="{Binding SelectNoneCommand}"/>
+            <TextBlock Text="기본 PK 개수" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            <NumericUpDown Value="{Binding DefaultKeyCount}" Minimum="0" Maximum="16"
+                           Increment="1" FormatString="0" Width="90"/>
+            <Button Content="전체 적용" Command="{Binding ApplyKeyCountToAllCommand}"/>
+          </StackPanel>
+
+          <DataGrid Grid.Row="1" ItemsSource="{Binding Tables}"
+                    AutoGenerateColumns="False" CanUserSortColumns="True"
+                    GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+            <DataGrid.Columns>
+              <DataGridCheckBoxColumn Header="사용" Binding="{Binding Include}" Width="50"/>
+              <DataGridTextColumn Header="파일" Binding="{Binding FileName}" IsReadOnly="True" Width="150"/>
+              <DataGridTextColumn Header="구분" Binding="{Binding KindLabel}" IsReadOnly="True" Width="60"/>
+              <DataGridTextColumn Header="원본(Name)" Binding="{Binding ObjectLabel}" IsReadOnly="True" Width="160"/>
+              <DataGridTextColumn Header="테이블명" Binding="{Binding TableName}" Width="180"/>
+              <DataGridTextColumn Header="PK수" Binding="{Binding KeyColumnCount}" Width="60"/>
+              <DataGridTextColumn Header="인덱스 컬럼" Binding="{Binding IndexColumns}" Width="180"/>
+              <DataGridTemplateColumn Header="구분자" Width="90">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <ComboBox ItemsSource="{Binding DelimiterOptions}" SelectedItem="{Binding Delimiter}"
+                              IsEnabled="{Binding IsText}" Margin="2" MinWidth="80"/>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="인코딩" Width="100">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <ComboBox ItemsSource="{Binding EncodingOptions}" SelectedItem="{Binding Encoding}"
+                              IsEnabled="{Binding IsText}" Margin="2" MinWidth="90"/>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridCheckBoxColumn Header="헤더" Binding="{Binding HasHeader}" Width="55"/>
+              <DataGridTextColumn Header="Skip" Binding="{Binding SkipRows}" Width="55"/>
+              <DataGridTemplateColumn Header="결과" Width="*">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Margin="4,0"
+                               Foreground="{Binding HasError, Converter={x:Static vm:Converters.ErrorBrush}}"/>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- ③ 옵션 -->
+    <Border Grid.Row="2" Classes="card">
+      <StackPanel Orientation="Horizontal" Spacing="18">
+        <CheckBox Content="컬럼 자동 추가" IsChecked="{Binding AllowAddColumns}"
+                  IsEnabled="{Binding IsAppendMode}"
+                  ToolTip.Tip="'신규 INSERT' 모드에서만 동작합니다.&#x0a;소스에만 있는 컬럼을 기존 테이블에 추가하고, 기존 행의 값은 비워 둡니다.&#x0a;끄면 컬럼 구성이 다를 때 해당 테이블은 실패로 보고됩니다."/>
+        <CheckBox Content="PK 컬럼 NOT NULL" IsChecked="{Binding KeyColumnsNotNull}"/>
+        <CheckBox Content="적재 이력 기록(_import_manifest)" IsChecked="{Binding WriteManifest}"/>
+        <CheckBox Content="오류 발생해도 계속" IsChecked="{Binding ContinueOnError}"/>
+      </StackPanel>
+    </Border>
+
+    <!-- ④ 실행 -->
+    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+      <StackPanel Grid.Column="0" VerticalAlignment="Center">
+        <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis"/>
+        <ProgressBar Minimum="0" Maximum="{Binding ProgressMax}" Value="{Binding ProgressValue}"
+                     Height="6" Margin="0,4,0,0"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="화면 초기화" Command="{Binding ResetCommand}"
+              IsEnabled="{Binding !IsRunning}"/>
+      <Button Grid.Column="2" Content="취소" Command="{Binding CancelCommand}"
+              IsVisible="{Binding IsRunning}"/>
+      <Button Grid.Column="3" Content="실행" Command="{Binding RunCommand}"
+              Classes="accent" MinWidth="110" FontWeight="SemiBold"/>
+    </Grid>
+
+    <!-- ⑤ 로그 -->
+    <Border Grid.Row="4" Classes="card" Height="150">
+      <ListBox ItemsSource="{Binding Log}" FontFamily="Consolas,Menlo,monospace" FontSize="12">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock TextWrapping="Wrap"
+                       Foreground="{Binding IsError, Converter={x:Static vm:Converters.ErrorBrush}}">
+              <Run Text="{Binding Time}"/><Run Text="  "/><Run Text="{Binding Message}"/>
+            </TextBlock>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+
+  </Grid>
+</Window>

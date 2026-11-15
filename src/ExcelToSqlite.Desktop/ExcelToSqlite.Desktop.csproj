@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 화면 앱 (Avalonia — 윈도 exe 한 파일, 맥 .app). 배포는 scripts/publish.sh -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AssemblyName>ExcelToSqlite</AssemblyName>
+    <RootNamespace>ExcelToSqlite.Desktop</RootNamespace>
+    <!-- 아이콘은 scripts/IconGen 으로 만든다. 맥 .app 아이콘(Assets/AppIcon.icns)은 scripts/publish.sh 가 넣는다 -->
+    <ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 창 아이콘 (윈도 제목 줄·작업 표시줄) -->
+    <AvaloniaResource Include="Assets/AppIcon.ico" />
+  </ItemGroup>
+
+  <!-- 배포 (dotnet publish -r <RID>): 받는 컴퓨터에 .NET이 없어도 열리게 런타임까지 넣는다 -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <!-- 윈도·리눅스는 실행 파일 하나로 (그림·글꼴·SQLite 네이티브 라이브러리도 넣어 두고 처음 열 때 풀어 쓴다).
+       맥은 .app 폴더 안에 그대로 담으므로 묶지 않는다 — 풀어 쓰는 단계가 없어 빨리 열린다 -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and !$(RuntimeIdentifier.StartsWith('osx'))">
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
+    <!-- DataGrid는 버전 번호를 따로 매긴다. 11.3 줄의 마지막이 11.3.13 (11.3.23은 없다) -->
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExcelToSqlite.Core\ExcelToSqlite.Core.csproj" />
+  </ItemGroup>
+
+</Project>
